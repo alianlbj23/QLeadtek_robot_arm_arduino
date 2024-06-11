@@ -60,6 +60,7 @@ void loop() {
     motorDriver.servoWrite(S5, servoAngles[4]);
     motorDriver.servoWrite(10, servoAngles[5]);
     // For the additional servo not controlled by motor driver
-    servo.write(servoAngles[4]);
+    // servo.write(servoAngles[4]);
+    servo.write(0);
   }
 }
