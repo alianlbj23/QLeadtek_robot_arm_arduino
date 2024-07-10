@@ -41,26 +41,72 @@ void setup() {
 int angle = 0;
 
 void loop() {
-  if (Serial.available() > 0) {
-    String jsonString = Serial.readString();
-    StaticJsonDocument<200> doc;
-    DeserializationError error = deserializeJson(doc, jsonString);
+  // if (Serial.available() > 0) {
+  //   String jsonString = Serial.readString();
+  //   StaticJsonDocument<200> doc;
+  //   DeserializationError error = deserializeJson(doc, jsonString);
 
-    if (error) {
-      Serial.print(F("deserializeJson() failed: "));
-      Serial.println(error.f_str());
-      return;
-    }
+  //   if (error) {
+  //     Serial.print(F("deserializeJson() failed: "));
+  //     Serial.println(error.f_str());
+  //     return;
+  //   }
 
-    JsonArray servoAngles = doc["servo_target_angles"];
-    motorDriver.servoWrite(S1, servoAngles[0]);
-    motorDriver.servoWrite(S2, servoAngles[1]);
-    motorDriver.servoWrite(S3, servoAngles[2]);
-    motorDriver.servoWrite(S4, servoAngles[3]);
-    motorDriver.servoWrite(S5, servoAngles[4]);
-    motorDriver.servoWrite(10, servoAngles[5]);
+  //   JsonArray servoAngles = doc["servo_target_angles"];
+  //   motorDriver.servoWrite(S1, servoAngles[0]);
+  //   motorDriver.servoWrite(S2, servoAngles[1]);
+  //   motorDriver.servoWrite(S3, servoAngles[2]);
+  //   motorDriver.servoWrite(S4, servoAngles[3]);
+  //   motorDriver.servoWrite(S5, servoAngles[4]);
+  
+  //test
+
+  motorDriver.servoWrite(S1, 90);
+  motorDriver.servoWrite(S2, 100);
+  motorDriver.servoWrite(S3, 20);
+  motorDriver.servoWrite(S4, 80);
+  motorDriver.servoWrite(S5, 30);
+  // int axis1=90, axis2=90, axis3=50, axis4=90, axis5=0;
+  // for(int i=0;i<30;i+=5){
+  //   motorDriver.servoWrite(S1, 90);
+  //   motorDriver.servoWrite(S2, 90-i);
+  //   motorDriver.servoWrite(S3, 50+i);
+  //   motorDriver.servoWrite(S4, 90+i);
+  //   motorDriver.servoWrite(S5, 0);
+  //   delay(1000);
+  // }
+
+  
+  
+  
+  // for(int i=0;i<=90;i+=10){
+  //   motorDriver.servoWrite(S1, i);
+  //   motorDriver.servoWrite(S2, i);
+  //   motorDriver.servoWrite(S3, i);
+  //   motorDriver.servoWrite(S4, i);
+  //   motorDriver.servoWrite(S5, i);
+  //   delay(1000);
+  // }
+  
+
+    // motorDriver.servoWrite(10, servoAngles[5]);
     // For the additional servo not controlled by motor driver
     // servo.write(servoAngles[4]);
     servo.write(0);
-  }
+    // delay(1000);
+    // servo.write(10);
+    // delay(1000);
+    // servo.write(20);
+    // delay(1000);
+    // servo.write(30);
+    // delay(1000);
+    // servo.write(45);
+    // delay(1000);
+    // servo.write(50);
+    // delay(1000);
+    // servo.write(60);
+    // delay(1000);
+    // servo.write(70);
+    // delay(1000);
+  // }
 }
