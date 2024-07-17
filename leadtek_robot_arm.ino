@@ -1,14 +1,3 @@
-/***************************************************
-  Motor Test - IIC Motor Drive (RZ7889 x 4)
-  Servo Control
-
-  motor driver library: https://github.com/YFROBOT-TM/Yfrobot-Motor-Driver-Library
-  motor driver iic Introduction: http://www.yfrobot.com.cn/wiki/index.php?title=MotorDriver_IIC
-  motor driver iic：https://item.taobao.com/item.htm?id=626324653253
-
-  YFROBOT ZL
-  08/13/2020
- ****************************************************/
 #include <Servo.h>
 #include <ArduinoJson.h>
 #include "MotorDriver.h"
@@ -16,8 +5,6 @@
 #define MOTORTYPE YF_IIC_RZ   // rz7889
 uint8_t SerialDebug = 1; // 串口打印调试 0-否 1-是
 
-// these constants are used to allow you to make your motor configuration
-// line up with function names like forward.  Value can be 1 or -1
 const int offsetm1 = 1;
 const int offsetm2 = 1;
 const int offsetm3 = 1;
@@ -27,6 +14,8 @@ const int offsetm4 = 1;
 MotorDriver motorDriver = MotorDriver(MOTORTYPE);
 Servo servo = Servo();
 
+int currentAngles[6] = {90, 100, 20, 80, 30, 0}; // S1, S2, S3, S4, S5, and the additional servo
+
 void setup() {
   Serial.begin(9600);
   Serial.println("Motor Drive test!");
@@ -34,79 +23,59 @@ void setup() {
   motorDriver.motorConfig(offsetm1, offsetm2, offsetm3, offsetm4);
   motorDriver.setPWMFreq(50); // 控制舵机时，需要设置PWM频率 ~50
   servo.attach(10);
+
+  // Initialize servos to the initial positions
+  motorDriver.servoWrite(S1, currentAngles[0]);
+  motorDriver.servoWrite(S2, currentAngles[1]);
+  motorDriver.servoWrite(S3, currentAngles[2]);
+  motorDriver.servoWrite(S4, currentAngles[3]);
+  motorDriver.servoWrite(S5, currentAngles[4]);
+  servo.write(currentAngles[5]);
+
   delay(1000);   // wait 2s
   Serial.println("Start...");
 }
 
-int angle = 0;
+void moveServoGradually(int servoIndex, int targetAngle, int stepDelay, int &currentAngle) {
+  if (targetAngle == -1) return; // Don't move if the target angle is -1
+  int step = (currentAngle < targetAngle) ? 1 : -1;
+  for (int angle = currentAngle; angle != targetAngle; angle += step) {
+    motorDriver.servoWrite(servoIndex, angle);
+    delay(stepDelay);
+  }
+  motorDriver.servoWrite(servoIndex, targetAngle);
+  currentAngle = targetAngle;
+}
+
+void moveServoGradually(Servo &servo, int targetAngle, int stepDelay, int &currentAngle) {
+  if (targetAngle == -1) return; // Don't move if the target angle is -1
+  int step = (currentAngle < targetAngle) ? 1 : -1;
+  for (int angle = currentAngle; angle != targetAngle; angle += step) {
+    servo.write(angle);
+    delay(stepDelay);
+  }
+  servo.write(targetAngle);
+  currentAngle = targetAngle;
+}
 
 void loop() {
-  // if (Serial.available() > 0) {
-  //   String jsonString = Serial.readString();
-  //   StaticJsonDocument<200> doc;
-  //   DeserializationError error = deserializeJson(doc, jsonString);
+  if (Serial.available() > 0) {
+    String jsonString = Serial.readString();
+    StaticJsonDocument<200> doc;
+    DeserializationError error = deserializeJson(doc, jsonString);
 
-  //   if (error) {
-  //     Serial.print(F("deserializeJson() failed: "));
-  //     Serial.println(error.f_str());
-  //     return;
-  //   }
+    if (error) {
+      Serial.print(F("deserializeJson() failed: "));
+      Serial.println(error.f_str());
+      return;
+    }
 
-  //   JsonArray servoAngles = doc["servo_target_angles"];
-  //   motorDriver.servoWrite(S1, servoAngles[0]);
-  //   motorDriver.servoWrite(S2, servoAngles[1]);
-  //   motorDriver.servoWrite(S3, servoAngles[2]);
-  //   motorDriver.servoWrite(S4, servoAngles[3]);
-  //   motorDriver.servoWrite(S5, servoAngles[4]);
-  
-  //test
-
-  motorDriver.servoWrite(S1, 90);
-  motorDriver.servoWrite(S2, 100);
-  motorDriver.servoWrite(S3, 20);
-  motorDriver.servoWrite(S4, 80);
-  motorDriver.servoWrite(S5, 30);
-  // int axis1=90, axis2=90, axis3=50, axis4=90, axis5=0;
-  // for(int i=0;i<30;i+=5){
-  //   motorDriver.servoWrite(S1, 90);
-  //   motorDriver.servoWrite(S2, 90-i);
-  //   motorDriver.servoWrite(S3, 50+i);
-  //   motorDriver.servoWrite(S4, 90+i);
-  //   motorDriver.servoWrite(S5, 0);
-  //   delay(1000);
-  // }
-
-  
-  
-  
-  // for(int i=0;i<=90;i+=10){
-  //   motorDriver.servoWrite(S1, i);
-  //   motorDriver.servoWrite(S2, i);
-  //   motorDriver.servoWrite(S3, i);
-  //   motorDriver.servoWrite(S4, i);
-  //   motorDriver.servoWrite(S5, i);
-  //   delay(1000);
-  // }
-  
-
-    // motorDriver.servoWrite(10, servoAngles[5]);
-    // For the additional servo not controlled by motor driver
-    // servo.write(servoAngles[4]);
-    servo.write(0);
-    // delay(1000);
-    // servo.write(10);
-    // delay(1000);
-    // servo.write(20);
-    // delay(1000);
-    // servo.write(30);
-    // delay(1000);
-    // servo.write(45);
-    // delay(1000);
-    // servo.write(50);
-    // delay(1000);
-    // servo.write(60);
-    // delay(1000);
-    // servo.write(70);
-    // delay(1000);
-  // }
+    JsonArray servoAngles = doc["servo_target_angles"];
+    moveServoGradually(S1, servoAngles[0], 50, currentAngles[0]);
+    moveServoGradually(S2, servoAngles[1], 50, currentAngles[1]);
+    moveServoGradually(S3, servoAngles[2], 50, currentAngles[2]);
+    moveServoGradually(S4, servoAngles[3], 50, currentAngles[3]);
+    moveServoGradually(S5, servoAngles[4], 50, currentAngles[4]);
+    moveServoGradually(servo, servoAngles[5], 50, currentAngles[5]);
+  }
 }
