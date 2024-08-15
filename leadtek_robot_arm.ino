@@ -163,11 +163,11 @@ void loop() {
     }
 
     JsonArray servoAngles = doc["servo_target_angles"];
-    moveServoGradually(S1, servoAngles[0], 1, currentAngles[0]);
-    moveServoGradually(S2, servoAngles[1], 1, currentAngles[1]);
-    moveServoGradually(S3, servoAngles[2], 1, currentAngles[2]);
-    moveServoGradually(S4, servoAngles[3], 1, currentAngles[3]);
-    moveServoGradually(S5, servoAngles[4], 1, currentAngles[4]);
-    moveServoGradually(servo, servoAngles[5], 1, currentAngles[5]);
+    moveServoGradually(S1, servoAngles[0], 50, currentAngles[0]);
+    moveServoGradually(S2, servoAngles[1], 50, currentAngles[1]);
+    moveServoGradually(S3, servoAngles[2], 50, currentAngles[2]);
+    moveServoGradually(S4, servoAngles[3], 50, currentAngles[3]);
+    moveServoGradually(S5, servoAngles[4], 50, currentAngles[4]);
+    moveServoGradually(servo, servoAngles[5], 50, currentAngles[5]);
   }
 }
