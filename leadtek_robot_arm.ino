@@ -54,7 +54,7 @@ void drv_s1(int NextHead, int delay_s1)
 }
 
 
-int currentAngles[6] = {90, 160, 175, 90, 90, 0}; // S1, S2, S3, S4, S5, and the additional servo
+int currentAngles[6] = {90, 90, 90, 90, 90, 90}; // S1, S2, S3, S4, S5, and the additional servo
 
 void setup() {
   int count = 0;
@@ -70,14 +70,14 @@ void setup() {
   motorDriver.motorConfig(offsetm1, offsetm2, offsetm3, offsetm4);
   motorDriver.setPWMFreq(50); // 控制舵机时，需要设置PWM频率 ~50
   servo.attach(10);
-  int angle = 175;
   // Initialize servos to the initial positions
-  motorDriver.servoWrite(S1, currentAngles[0]);
-  motorDriver.servoWrite(S2, currentAngles[1]);
-  motorDriver.servoWrite(S3, currentAngles[2]);
-  motorDriver.servoWrite(S4, currentAngles[3]);
-  motorDriver.servoWrite(S5, currentAngles[4]);
-  servo.write(currentAngles[5]);
+  
+  // motorDriver.servoWrite(S1, currentAngles[0]);
+  // motorDriver.servoWrite(S2, currentAngles[1]);
+  // motorDriver.servoWrite(S3, currentAngles[2]);
+  // motorDriver.servoWrite(S4, currentAngles[3]);
+  // motorDriver.servoWrite(S5, currentAngles[4]);
+  // servo.write(currentAngles[5]);
 
   int  Home = digitalRead( HomePosIO) ;  
   #if 1
@@ -108,24 +108,47 @@ void setup() {
       }
   }    
   digitalWrite( LED, LOW);
+
+
+  // int targetAngleS1 = 90;
+  // int initialAngleS2 = 20;
+  // int targetAngleS3 = 90;
+  // int targetAngleS4 = 90;
+  // int targetAngleS5 = 90;
+  
   int t1 = 20;
+  int delay_time = 500;
+  int angle = 0;
   angle = 160;
+  // moveServoGradually(S1, 0, delay_time, targetAngleS1);
+  motorDriver.servoWrite(S1, 90); 
+  motorDriver.servoWrite(S2, 90);
+  motorDriver.servoWrite(S3, 90);
+  motorDriver.servoWrite(S4, 90);
+  motorDriver.servoWrite(S5, 90);
+  servo.write(90);
+  // moveServoGradually(S2, 90, 80, initialAngleS2);
+  // // motorDriver.servoWrite(S2, 90);
+  // while( angle > 90) 
+  // {
+    
+  //   // motorDriver.servoWrite(S2, 90); 
+  //   // motorDriver.servoWrite(S3, 90); 
+  //   moveServoGradually(S3, 0, delay_time, targetAngleS3);
+    
+  //   delay(t1);  
+  //   angle = angle - 1;
+  // }
+  // moveServoGradually(S3, 0, delay_time, targetAngleS3); 
+  // delay(t1); 
 
-  while( angle > 90) 
-  {
-    motorDriver.servoWrite(S2, angle); 
-    motorDriver.servoWrite(S3, 175); 
-    delay(t1);  
-    angle = angle - 1;
-  }
-  angle = 90;
-  motorDriver.servoWrite(S2, angle); 
-  motorDriver.servoWrite(S3, 175); 
-  delay(t1); 
-
+  // motorDriver.servoWrite(S4, 90); 
+  // // moveServoGradually(S4, 0, delay_time, targetAngleS4);
+  // motorDriver.servoWrite(S5, 90);
+  // // moveServoGradually(S5, 0, delay_time, targetAngleS5); 
 
   delay(1000);   // wait 2s
-  Serial.println("Start...");
+  // Serial.println("Start...");
 }
 
 void moveServoGradually(int servoIndex, int targetAngle, int stepDelay, int &currentAngle) {
