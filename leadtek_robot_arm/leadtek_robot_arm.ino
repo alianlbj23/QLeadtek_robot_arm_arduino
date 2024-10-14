@@ -1,7 +1,7 @@
 #include <Servo.h>
 #include <ArduinoJson.h>
 #include "MotorDriver.h"
-
+#define CUSTOM_ID "ARM001"
 #define MOTORTYPE YF_IIC_RZ   // rz7889
 uint8_t SerialDebug = 1; // 串口打印调试 0-否 1-是
 
@@ -57,8 +57,10 @@ void drv_s1(int NextHead, int delay_s1)
 int currentAngles[6] = {90, 90, 90, 90, 90, 90}; // S1, S2, S3, S4, S5, and the additional servo
 
 void setup() {
+  Serial.begin(115200);
+  Serial.println(CUSTOM_ID);
   int count = 0;
-  Serial.begin(9600);
+  
   Serial.println("Motor Drive test!");
 
   pinMode( HomePosIO, INPUT_PULLUP);
