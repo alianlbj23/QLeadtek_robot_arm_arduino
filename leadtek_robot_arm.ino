@@ -10,8 +10,8 @@ const int offsetm2 = 1;
 const int offsetm3 = 1;
 const int offsetm4 = 1;
 #define HomePosIO  11
-#define LED 13
-#define PowerEnable 12
+#define bee 13 // 蜂鸣器
+#define PowerEnable 12 // 电源使能
 
 int Heading = 90;
 int NextHeading = 90;
@@ -53,16 +53,69 @@ void drv_s1(int NextHead, int delay_s1)
   }  
 }
 
+// void initial_setting()
+// {
+//   int count = 0;
+//   int  Home = digitalRead( HomePosIO) ;  
+//   while( Home == HIGH)
+//   {
+//     if(++count < 10)   
+//         digitalWrite( bee, LOW);
+//     else
+//     {
+//       digitalWrite( bee, HIGH);
+//       count = 0;
+//     }
+//     delay(50);  
+//     Home = digitalRead( HomePosIO) ;
+//   }
+//   digitalWrite( bee, LOW);
+//   delay(250);
+//   digitalWrite( bee, HIGH);
+//   delay(3000);  
+//   digitalWrite( PowerEnable, HIGH);
+//   for( int i =0 ; i<10;i++)
+//   {
+//     delay(100);
+//     if(  digitalRead( HomePosIO) == HIGH )
+//       {
+//         digitalWrite( bee, LOW);
+//       }
+//   }    
+//   digitalWrite( bee, LOW);
+//   motorDriver.servoWrite(S1, 90); 
+//   motorDriver.servoWrite(S2, 90);
+//   motorDriver.servoWrite(S3, 90);
+//   motorDriver.servoWrite(S4, 90);
+//   motorDriver.servoWrite(S5, 90);
+//   servo.write(90);
+//   delay(1000);   // wait 2s
+// }
+
 
 int currentAngles[6] = {90, 160, 175, 90, 90, 0}; // S1, S2, S3, S4, S5, and the additional servo
 
 void setup() {
   int count = 0;
   Serial.begin(9600);
+
+int currentAngles[6] = {90, 90, 90, 90, 90, 90}; // S1, S2, S3, S4, S5, and the additional servo
+bool needInitialSetting = true;
+// 添加这些全局变量
+unsigned long lastInitialSettingTime = 0;
+int initialSettingState = 0;
+bool initialSettingComplete = false;
+
+void setup() {
+  Serial.begin(115200);
+  delay(1000); 
+  Serial.println(CUSTOM_ID);
+  
+>>>>>>> Stashed changes:leadtek_robot_arm/leadtek_robot_arm.ino
   Serial.println("Motor Drive test!");
 
   pinMode( HomePosIO, INPUT_PULLUP);
-  pinMode( LED, OUTPUT);
+  pinMode( bee, OUTPUT);
   pinMode( PowerEnable, OUTPUT);
   digitalWrite( PowerEnable, LOW);
 
@@ -126,6 +179,11 @@ void setup() {
 
   delay(1000);   // wait 2s
   Serial.println("Start...");
+=======
+
+
+  
+>>>>>>> Stashed changes:leadtek_robot_arm/leadtek_robot_arm.ino
 }
 
 void moveServoGradually(int servoIndex, int targetAngle, int stepDelay, int &currentAngle) {
@@ -151,23 +209,76 @@ void moveServoGradually(Servo &servo, int targetAngle, int stepDelay, int &curre
 }
 
 void loop() {
+  // ��阻塞的初始设置
+  if (!initialSettingComplete) {
+    performInitialSetting();
+  }
+
+  // 检查串口命令
   if (Serial.available() > 0) {
-    String jsonString = Serial.readString();
-    StaticJsonDocument<200> doc;
-    DeserializationError error = deserializeJson(doc, jsonString);
+    char command = Serial.peek();
 
-    if (error) {
-      Serial.print(F("deserializeJson() failed: "));
-      Serial.println(error.f_str());
-      return;
+    if (command == 'I') {
+      Serial.read(); // 移除 'I' 字符
+      Serial.println(CUSTOM_ID);
+    } else {
+      // 处理 JSON 数据
+      String jsonString = Serial.readString();
+      StaticJsonDocument<200> doc;
+      DeserializationError error = deserializeJson(doc, jsonString);
+
+      if (!error && initialSettingComplete == true) {
+        JsonArray servoAngles = doc["servo_target_angles"];
+        moveServoGradually(S1, servoAngles[0], 50, currentAngles[0]);
+        moveServoGradually(S2, servoAngles[1], 50, currentAngles[1]);
+        moveServoGradually(S3, servoAngles[2], 50, currentAngles[2]);
+        moveServoGradually(S4, servoAngles[3], 50, currentAngles[3]);
+        moveServoGradually(S5, servoAngles[4], 50, currentAngles[4]);
+        moveServoGradually(servo, servoAngles[5], 50, currentAngles[5]);
+      }
     }
+  }
+}
 
-    JsonArray servoAngles = doc["servo_target_angles"];
-    moveServoGradually(S1, servoAngles[0], 50, currentAngles[0]);
-    moveServoGradually(S2, servoAngles[1], 50, currentAngles[1]);
-    moveServoGradually(S3, servoAngles[2], 50, currentAngles[2]);
-    moveServoGradually(S4, servoAngles[3], 50, currentAngles[3]);
-    moveServoGradually(S5, servoAngles[4], 50, currentAngles[4]);
-    moveServoGradually(servo, servoAngles[5], 50, currentAngles[5]);
+void performInitialSetting() {
+  unsigned long currentTime = millis();
+  
+  switch (initialSettingState) {
+    case 0: // 等待微动开关
+      if (digitalRead(HomePosIO) == LOW) {
+        initialSettingState = 1;
+        lastInitialSettingTime = currentTime;
+      } else {
+        // 闪烁 bee
+        digitalWrite(bee, (currentTime / 500) % 2);
+      }
+      break;
+      
+    case 1: // bee 关闭延迟
+      digitalWrite(bee, LOW);
+      if (currentTime - lastInitialSettingTime >= 250) {
+        initialSettingState = 2;
+        lastInitialSettingTime = currentTime;
+      }
+      break;
+      
+    case 2: // bee 开启延迟
+      digitalWrite(bee, HIGH);
+      if (currentTime - lastInitialSettingTime >= 3000) {
+        initialSettingState = 3;
+      }
+      break;
+      
+    case 3: // 电源使能和最终设置
+      digitalWrite(PowerEnable, HIGH);
+      digitalWrite(bee, LOW);
+      motorDriver.servoWrite(S1, 90);
+      motorDriver.servoWrite(S2, 90);
+      motorDriver.servoWrite(S3, 90);
+      motorDriver.servoWrite(S4, 90);
+      motorDriver.servoWrite(S5, 90);
+      servo.write(90);
+      initialSettingComplete = true;
+      break;
   }
 }
