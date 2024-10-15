@@ -35,10 +35,10 @@ void drv_s34(int NextHead, int delay_drv)
     motorDriver.servoWrite(S4, 90 + (180 -Ang_34p)); 
     delay(delay_drv);    
 
-    Serial.print("Target = ");
-    Serial.print(NextHead);    
-    Serial.print("Ang_34p = ");
-    Serial.println(Ang_34p);    
+    // Serial.print("Target = ");
+    // Serial.print(NextHead);    
+    // Serial.print("Ang_34p = ");
+    // Serial.println(Ang_34p);    
   }  
 }
 
@@ -105,7 +105,7 @@ void setup() {
   delay(1000); 
   Serial.println(CUSTOM_ID);
   
-  Serial.println("Motor Drive test!");
+  // Serial.println("Motor Drive test!");
 
   pinMode( HomePosIO, INPUT_PULLUP);
   pinMode( bee, OUTPUT);
@@ -144,6 +144,7 @@ void moveServoGradually(Servo &servo, int targetAngle, int stepDelay, int &curre
 }
 
 void loop() {
+  Serial.println(CUSTOM_ID);
   // ��阻塞的初始设置
   if (!initialSettingComplete) {
     performInitialSetting();
@@ -153,25 +154,22 @@ void loop() {
   if (Serial.available() > 0) {
     char command = Serial.peek();
 
-    if (command == 'I') {
-      Serial.read(); // 移除 'I' 字符
-      Serial.println(CUSTOM_ID);
-    } else {
-      // 处理 JSON 数据
-      String jsonString = Serial.readString();
-      StaticJsonDocument<200> doc;
-      DeserializationError error = deserializeJson(doc, jsonString);
+    
+    // 处理 JSON 数据
+    String jsonString = Serial.readString();
+    StaticJsonDocument<200> doc;
+    DeserializationError error = deserializeJson(doc, jsonString);
 
-      if (!error && initialSettingComplete == true) {
-        JsonArray servoAngles = doc["servo_target_angles"];
-        moveServoGradually(S1, servoAngles[0], 50, currentAngles[0]);
-        moveServoGradually(S2, servoAngles[1], 50, currentAngles[1]);
-        moveServoGradually(S3, servoAngles[2], 50, currentAngles[2]);
-        moveServoGradually(S4, servoAngles[3], 50, currentAngles[3]);
-        moveServoGradually(S5, servoAngles[4], 50, currentAngles[4]);
-        moveServoGradually(servo, servoAngles[5], 50, currentAngles[5]);
-      }
+    if (!error && initialSettingComplete == true) {
+      JsonArray servoAngles = doc["servo_target_angles"];
+      moveServoGradually(S1, servoAngles[0], 50, currentAngles[0]);
+      moveServoGradually(S2, servoAngles[1], 50, currentAngles[1]);
+      moveServoGradually(S3, servoAngles[2], 50, currentAngles[2]);
+      moveServoGradually(S4, servoAngles[3], 50, currentAngles[3]);
+      moveServoGradually(S5, servoAngles[4], 50, currentAngles[4]);
+      moveServoGradually(servo, servoAngles[5], 50, currentAngles[5]);
     }
+    
   }
 }
 
