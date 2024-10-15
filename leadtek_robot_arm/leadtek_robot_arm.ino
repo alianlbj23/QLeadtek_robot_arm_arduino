@@ -1,9 +1,8 @@
 #include <Servo.h>
 #include <ArduinoJson.h>
 #include "MotorDriver.h"
-#define CUSTOM_ID "ARM001"
+#define CUSTOM_ID "usb_robot_arm"
 #define MOTORTYPE YF_IIC_RZ
-uint8_t SerialDebug = 1;
 const int offsetm1 = 1;
 const int offsetm2 = 1;
 const int offsetm3 = 1;
@@ -11,43 +10,9 @@ const int offsetm4 = 1;
 #define HomePosIO  11
 #define bee 13
 #define PowerEnable 12
-int Heading = 90;
-int NextHeading = 90;
-int Ang_34p = 175;
-// Initializing motors.
 MotorDriver motorDriver = MotorDriver(MOTORTYPE);
 Servo servo = Servo();
-void drv_S3_S4( int angS34)
-{
- motorDriver.servoWrite(S3, angS34); 
- motorDriver.servoWrite(S4, angS34); 
-}
-
-void drv_s34(int NextHead, int delay_drv)
-{
-  while( NextHead != Ang_34p)
-  {  
-    if( NextHead > Ang_34p) Ang_34p = Ang_34p +1;
-    else Ang_34p = Ang_34p - 1;
-    motorDriver.servoWrite(S3, Ang_34p); 
-    motorDriver.servoWrite(S4, 90 + (180 -Ang_34p)); 
-    delay(delay_drv);        
-  }  
-}
-
-void drv_s1(int NextHead, int delay_s1)
-{
-  while( NextHead != Heading)
-  {  
-    if( NextHead > Heading) Heading = Heading +1;
-    else Heading = Heading - 1;
-    motorDriver.servoWrite(S1, Heading); 
-    delay(delay_s1);    
-  }  
-}
-
 int currentAngles[6] = {90, 90, 90, 90, 90, 90}; // S1, S2, S3, S4, S5, and the additional servo
-bool needInitialSetting = true;
 unsigned long lastInitialSettingTime = 0;
 int initialSettingState = 0;
 bool initialSettingComplete = false;
@@ -62,6 +27,7 @@ void setup() {
   motorDriver.motorConfig(offsetm1, offsetm2, offsetm3, offsetm4);
   motorDriver.setPWMFreq(50);
   servo.attach(10);
+  
 }
 
 void moveServoGradually(int servoIndex, int targetAngle, int stepDelay, int &currentAngle) {
@@ -93,15 +59,12 @@ void loop() {
   }
 
   if (Serial.available() > 0) {
-    char command = Serial.peek();    
     String jsonString = Serial.readString();
     StaticJsonDocument<200> doc;
     DeserializationError error = deserializeJson(doc, jsonString);
     if (!error) {
       if (doc.containsKey("command") && doc["command"] == "I") {
-        Serial.print("{\"custom_id\":\"");
         Serial.println(CUSTOM_ID);
-        Serial.println("\"}");
       } 
       if(initialSettingComplete == true){
         JsonArray servoAngles = doc["servo_target_angles"];
