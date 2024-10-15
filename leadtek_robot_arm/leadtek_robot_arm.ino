@@ -58,6 +58,7 @@ int currentAngles[6] = {90, 90, 90, 90, 90, 90}; // S1, S2, S3, S4, S5, and the 
 
 void setup() {
   Serial.begin(115200);
+  delay(1000); 
   Serial.println(CUSTOM_ID);
   int count = 0;
   
