@@ -2,17 +2,15 @@
 #include <ArduinoJson.h>
 #include "MotorDriver.h"
 #define CUSTOM_ID "ARM001"
-#define MOTORTYPE YF_IIC_RZ   // rz7889
-uint8_t SerialDebug = 1; // 串口打印调试 0-否 1-是
-
+#define MOTORTYPE YF_IIC_RZ
+uint8_t SerialDebug = 1;
 const int offsetm1 = 1;
 const int offsetm2 = 1;
 const int offsetm3 = 1;
 const int offsetm4 = 1;
 #define HomePosIO  11
-#define bee 13 // 蜂鸣器
-#define PowerEnable 12 // 电源使能
-
+#define bee 13
+#define PowerEnable 12
 int Heading = 90;
 int NextHeading = 90;
 int Ang_34p = 175;
@@ -33,12 +31,7 @@ void drv_s34(int NextHead, int delay_drv)
     else Ang_34p = Ang_34p - 1;
     motorDriver.servoWrite(S3, Ang_34p); 
     motorDriver.servoWrite(S4, 90 + (180 -Ang_34p)); 
-    delay(delay_drv);    
-
-    // Serial.print("Target = ");
-    // Serial.print(NextHead);    
-    // Serial.print("Ang_34p = ");
-    // Serial.println(Ang_34p);    
+    delay(delay_drv);        
   }  
 }
 
@@ -53,72 +46,22 @@ void drv_s1(int NextHead, int delay_s1)
   }  
 }
 
-// void initial_setting()
-// {
-//   int count = 0;
-//   int  Home = digitalRead( HomePosIO) ;  
-//   while( Home == HIGH)
-//   {
-//     if(++count < 10)   
-//         digitalWrite( bee, LOW);
-//     else
-//     {
-//       digitalWrite( bee, HIGH);
-//       count = 0;
-//     }
-//     delay(50);  
-//     Home = digitalRead( HomePosIO) ;
-//   }
-//   digitalWrite( bee, LOW);
-//   delay(250);
-//   digitalWrite( bee, HIGH);
-//   delay(3000);  
-//   digitalWrite( PowerEnable, HIGH);
-//   for( int i =0 ; i<10;i++)
-//   {
-//     delay(100);
-//     if(  digitalRead( HomePosIO) == HIGH )
-//       {
-//         digitalWrite( bee, LOW);
-//       }
-//   }    
-//   digitalWrite( bee, LOW);
-//   motorDriver.servoWrite(S1, 90); 
-//   motorDriver.servoWrite(S2, 90);
-//   motorDriver.servoWrite(S3, 90);
-//   motorDriver.servoWrite(S4, 90);
-//   motorDriver.servoWrite(S5, 90);
-//   servo.write(90);
-//   delay(1000);   // wait 2s
-// }
-
-
 int currentAngles[6] = {90, 90, 90, 90, 90, 90}; // S1, S2, S3, S4, S5, and the additional servo
 bool needInitialSetting = true;
-// 添加这些全局变量
 unsigned long lastInitialSettingTime = 0;
 int initialSettingState = 0;
 bool initialSettingComplete = false;
 
 void setup() {
-  Serial.begin(115200);
-  delay(1000); 
-  Serial.println(CUSTOM_ID);
-  
-  // Serial.println("Motor Drive test!");
-
+  Serial.begin(115200);  
   pinMode( HomePosIO, INPUT_PULLUP);
   pinMode( bee, OUTPUT);
   pinMode( PowerEnable, OUTPUT);
   digitalWrite( PowerEnable, LOW);
-
   motorDriver.begin();
   motorDriver.motorConfig(offsetm1, offsetm2, offsetm3, offsetm4);
-  motorDriver.setPWMFreq(50); // 控制舵机时，需要设置PWM频率 ~50
+  motorDriver.setPWMFreq(50);
   servo.attach(10);
-
-
-  
 }
 
 void moveServoGradually(int servoIndex, int targetAngle, int stepDelay, int &currentAngle) {
@@ -144,50 +87,48 @@ void moveServoGradually(Servo &servo, int targetAngle, int stepDelay, int &curre
 }
 
 void loop() {
-  Serial.println(CUSTOM_ID);
-  // ��阻塞的初始设置
   if (!initialSettingComplete) {
+    digitalWrite(PowerEnable, LOW);
     performInitialSetting();
   }
 
-  // 检查串口命令
   if (Serial.available() > 0) {
-    char command = Serial.peek();
-
-    
-    // 处理 JSON 数据
+    char command = Serial.peek();    
     String jsonString = Serial.readString();
     StaticJsonDocument<200> doc;
     DeserializationError error = deserializeJson(doc, jsonString);
-
-    if (!error && initialSettingComplete == true) {
-      JsonArray servoAngles = doc["servo_target_angles"];
-      moveServoGradually(S1, servoAngles[0], 50, currentAngles[0]);
-      moveServoGradually(S2, servoAngles[1], 50, currentAngles[1]);
-      moveServoGradually(S3, servoAngles[2], 50, currentAngles[2]);
-      moveServoGradually(S4, servoAngles[3], 50, currentAngles[3]);
-      moveServoGradually(S5, servoAngles[4], 50, currentAngles[4]);
-      moveServoGradually(servo, servoAngles[5], 50, currentAngles[5]);
+    if (!error) {
+      if (doc.containsKey("command") && doc["command"] == "I") {
+        Serial.print("{\"custom_id\":\"");
+        Serial.println(CUSTOM_ID);
+        Serial.println("\"}");
+      } 
+      if(initialSettingComplete == true){
+        JsonArray servoAngles = doc["servo_target_angles"];
+        moveServoGradually(S1, servoAngles[0], 50, currentAngles[0]);
+        moveServoGradually(S2, servoAngles[1], 50, currentAngles[1]);
+        moveServoGradually(S3, servoAngles[2], 50, currentAngles[2]);
+        moveServoGradually(S4, servoAngles[3], 50, currentAngles[3]);
+        moveServoGradually(S5, servoAngles[4], 50, currentAngles[4]);
+        moveServoGradually(servo, servoAngles[5], 50, currentAngles[5]);
+      } 
     }
-    
   }
 }
-
 void performInitialSetting() {
   unsigned long currentTime = millis();
   
   switch (initialSettingState) {
-    case 0: // 等待微动开关
+    case 0:
       if (digitalRead(HomePosIO) == LOW) {
         initialSettingState = 1;
         lastInitialSettingTime = currentTime;
       } else {
-        // 闪烁 bee
         digitalWrite(bee, (currentTime / 500) % 2);
       }
       break;
       
-    case 1: // bee 关闭延迟
+    case 1:
       digitalWrite(bee, LOW);
       if (currentTime - lastInitialSettingTime >= 250) {
         initialSettingState = 2;
@@ -195,14 +136,14 @@ void performInitialSetting() {
       }
       break;
       
-    case 2: // bee 开启延迟
+    case 2:
       digitalWrite(bee, HIGH);
       if (currentTime - lastInitialSettingTime >= 3000) {
         initialSettingState = 3;
       }
       break;
       
-    case 3: // 电源使能和最终设置
+    case 3:
       digitalWrite(PowerEnable, HIGH);
       digitalWrite(bee, LOW);
       motorDriver.servoWrite(S1, 90);
